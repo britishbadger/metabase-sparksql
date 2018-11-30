@@ -1,0 +1,32 @@
+version: '2'
+services:
+  spark-master:
+    build:
+      context: docker-spark-cluster
+      dockerfile: spark.master.Dockerfile
+    image: kj/spark-master:2.3.2-hadoop2.7
+    container_name: spark-master
+    ports:
+      - "8080:8080"
+      # Expose the thrift server
+      - "10015:10015"    
+      - "7077:7077"
+    environment:
+      - INIT_DAEMON_STEP=setup_spark
+    # Give the cluster access to the datasets, in reality this would be an s3/gcs/hdfs location
+    volumes: 
+      - ${DATA_DIR}:/datasets
+  spark-worker-1:
+    build:
+      context: docker-spark-cluster
+      dockerfile: spark.worker.Dockerfile
+    image: kj/spark-worker:2.3.2-hadoop2.7
+    container_name: spark-worker-1
+    depends_on:
+      - spark-master
+    ports:
+      - "8082:8081"
+    volumes: 
+      - ${DATA_DIR}:/datasets
+    environment:
+      - "SPARK_MASTER=spark://spark-master:7077"
